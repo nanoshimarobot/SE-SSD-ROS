@@ -18,10 +18,13 @@ COPY . /se-ssd
 WORKDIR /se-ssd
 
 # SE-SSD dependencies
-RUN python3 -m pip install -r requirements.txt && \
-    python3 -m pip install typing-extensions==4.1.0 && \
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+# python3-opencv
+RUN pip install --upgrade pip setuptools wheel
+RUN pip3 install -r requirements.txt && \
+    pip3 install typing-extensions==4.1.0 && \
     python3 install.py
 
 COPY bashrc /root/.bashrc
 
-CMD ["bash", "-c", "NUMBAPRO_NVVM=/usr/local/cuda/nvvm/lib64/libnvvm.so NUMBAPRO_LIBDEVICE=/usr/local/cuda/nvvm/libdevice/ python3 ros_main.py --subscribed_topic /lio_segmot/keyframe/cloud_info --verbose --mode lio_segmot"]
+# CMD ["bash", "-c", "NUMBAPRO_NVVM=/usr/local/cuda/nvvm/lib64/libnvvm.so NUMBAPRO_LIBDEVICE=/usr/local/cuda/nvvm/libdevice/ python3 ros_main.py --subscribed_topic /lio_segmot/keyframe/cloud_info --verbose --mode lio_segmot"]
