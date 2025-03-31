@@ -11,7 +11,37 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu bionic main" > /etc/apt/
     rosdep init && \
     rosdep update
 
-RUN apt install -y ros-melodic-jsk-recognition-msgs
+RUN apt install -y ros-melodic-navigation \
+    ros-melodic-robot-localization \
+    ros-melodic-robot-state-publisher \
+    ros-melodic-jsk-recognition-msgs \
+    ros-melodic-jsk-rviz-plugins
+
+WORKDIR /root
+RUN git clone -b 4.0.3 https://github.com/borglab/gtsam.git
+RUN mkdir /root/gtsam/build
+WORKDIR /root/gtsam/build
+# RUN cmake ..  && make -j$(nproc) install
+RUN cmake -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=ON \
+          -DGTSAM_USE_QUATERNIONS=ON \
+          -DGTSAM_USE_SYSTEM_EIGEN=ON \
+          -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+          -DCMAKE_INSTALL_PREFIX=/usr/local .. && \
+          make -j$(nproc) install
+
+# for melodic, resolve conflicting
+RUN mv /usr/include/flann/ext/lz4.h /usr/include/flann/ext/lz4.h.bak
+RUN mv /usr/include/flann/ext/lz4hc.h /usr/include/flann/ext/lz4hc.h.bak
+RUN ln -s /usr/include/lz4.h /usr/include/flann/ext/lz4.h
+RUN ln -s /usr/include/lz4hc.h /usr/include/flann/ext/lz4hc.h
+
+WORKDIR /root
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.21.2/cmake-3.21.2.tar.gz
+RUN tar xzvf cmake-3.21.2.tar.gz
+WORKDIR /root/cmake-3.21.2
+RUN ./bootstrap && make -j$(nproc)
+ENV CMAKE_BIN_PATH=/root/cmake-3.21.2/bin
 
 COPY Caffe2Targets.cmake /opt/conda/lib/python3.6/site-packages/torch/share/cmake/Caffe2/Caffe2Targets.cmake
 COPY . /se-ssd
@@ -23,7 +53,14 @@ WORKDIR /se-ssd
 RUN pip install --upgrade pip setuptools wheel
 RUN pip3 install -r requirements.txt && \
     pip3 install typing-extensions==4.1.0 && \
-    python3 install.py
+    python3 install.py --cmake_executable=/root/cmake-3.21.2/bin/cmake
+
+WORKDIR /root
+RUN mkdir -p /root/catkin_ws/src
+WORKDIR /root/catkin_ws/src
+RUN git clone https://github.com/nanoshimarobot/LIO-SEGMOT.git
+WORKDIR /root/catkin_ws
+RUN source /opt/ros/melodic/setup.bash && catkin_make
 
 COPY bashrc /root/.bashrc
 
