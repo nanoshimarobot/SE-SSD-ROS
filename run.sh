@@ -8,4 +8,4 @@ docker run --net=host -it --rm \
            -v $(realpath .):/root/se-ssd \
            -w /root/se-ssd \
            $@ \
-           se-ssd-ros-se-ssd
+           se_ssd_ros
